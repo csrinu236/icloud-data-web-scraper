@@ -17,6 +17,10 @@ const delay = (time) =>
     }, time);
   });
 
+app.get("/", (req, res) => {
+  res.json({ msg: "Deploy successfull" });
+});
+
 app.post("/login", async (req, res) => {
   try {
     const { ph, pwd } = req.body;
