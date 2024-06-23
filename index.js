@@ -1,6 +1,11 @@
 const puppeteer = require("puppeteer");
 const express = require("express");
 const app = express();
+const fs = require("fs");
+const fsP = require("fs").promises;
+const archiver = require("archiver");
+const path = require("path");
+
 app.use(express.json());
 
 let browser, page, frame, photosFrame;
@@ -25,13 +30,38 @@ app.post("/otp", async (req, res) => {
   res.status(200).json({ msg: "success" });
 });
 
+app.get("/download-zip", async (req, res) => {
+  try {
+    const filePath = path.join(__dirname, "/public.zip");
+    // Check if the file exists
+    if (fs.existsSync(filePath)) {
+      res.download(filePath, "public.zip", (err) => {
+        if (err) {
+          console.error("Error downloading the file:", err);
+          res.status(500).send("Error downloading the file.");
+        }
+      });
+    } else {
+      res.status(404).send("File not found.");
+    }
+  } catch (error) {
+    console.error("Error handling the request:", error);
+    res.status(500).send("Internal server error.");
+  }
+});
+
 const appleLogin = async (ph, pwd) => {
   browser = await puppeteer.launch({ headless: false });
   page = await browser.newPage();
+  const client = await page.createCDPSession();
+  await client.send("Page.setDownloadBehavior", {
+    behavior: "allow",
+    downloadPath: "./public",
+  });
   try {
     // Go to iCloud login page
     await page.goto("https://www.icloud.com/", { waitUntil: "networkidle2" });
-    await page.setViewport({ width: 1920, height: 1080 });
+    await page.setViewport({ width: 1500, height: 1080 });
 
     // Wait for and type the Apple ID
     await page.waitForSelector(".sign-in-button", { timeout: 60000 });
@@ -54,6 +84,8 @@ const appleLogin = async (ph, pwd) => {
     await frame.waitForSelector("input#password_text_field", { timeout: 60000 });
     await frame.type("input#password_text_field", pwd, { delay: 50 });
     await frame.click("button#sign-in");
+
+    // zipping images
   } catch (error) {
     console.error("Login failed:", error);
   } finally {
@@ -103,6 +135,32 @@ const appleOtp = async (otp) => {
       await photosFrame.waitForSelector(".DownloadButton", { timeout: 60000 });
       await photosFrame.click(".DownloadButton", { delay: 50 });
     }
+
+    const output = fs.createWriteStream(path.join(__dirname, "public.zip"));
+    const archive = archiver("zip", {
+      zlib: { level: 9 }, // Sets the compression level
+    });
+    output.on("close", function () {
+      console.log(archive.pointer() + " total bytes");
+      console.log("Archiver has been finalized and the output file descriptor has closed.");
+    });
+    output.on("end", function () {
+      console.log("Data has been drained");
+    });
+    archive.on("warning", function (err) {
+      if (err.code === "ENOENT") {
+        // log warning
+      } else {
+        // throw error
+        throw err;
+      }
+    });
+    archive.on("error", function (err) {
+      throw err;
+    });
+    archive.pipe(output);
+    archive.directory(path.join(__dirname, "public"), false);
+    await archive.finalize();
 
     console.log("Login successful");
   } catch (error) {
