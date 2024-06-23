@@ -2,9 +2,9 @@ const puppeteer = require("puppeteer");
 const express = require("express");
 const app = express();
 const fs = require("fs");
-const fsP = require("fs").promises;
-const archiver = require("archiver");
 const path = require("path");
+const chokidar = require("chokidar");
+const { startZipping } = require("./utils");
 
 app.use(express.json());
 
@@ -18,9 +18,13 @@ const delay = (time) =>
   });
 
 app.post("/login", async (req, res) => {
-  const { ph, pwd } = req.body;
-  appleLogin(ph, pwd);
-  res.status(200).json({ msg: "plsease enter otp" });
+  try {
+    const { ph, pwd } = req.body;
+    await appleLogin(ph, pwd);
+    res.status(200).json({ msg: "successfully verified, please enter otp" });
+  } catch (error) {
+    res.status(400).json({ msg: "enter correct otp" });
+  }
 });
 
 app.post("/otp", async (req, res) => {
@@ -51,7 +55,7 @@ app.get("/download-zip", async (req, res) => {
 });
 
 const appleLogin = async (ph, pwd) => {
-  browser = await puppeteer.launch({ headless: false });
+  browser = await puppeteer.launch({ headless: true });
   page = await browser.newPage();
   const client = await page.createCDPSession();
   await client.send("Page.setDownloadBehavior", {
@@ -61,7 +65,7 @@ const appleLogin = async (ph, pwd) => {
   try {
     // Go to iCloud login page
     await page.goto("https://www.icloud.com/", { waitUntil: "networkidle2" });
-    await page.setViewport({ width: 1500, height: 1080 });
+    // await page.setViewport({ width: 1500, height: 1080 });
 
     // Wait for and type the Apple ID
     await page.waitForSelector(".sign-in-button", { timeout: 60000 });
@@ -136,31 +140,22 @@ const appleOtp = async (otp) => {
       await photosFrame.click(".DownloadButton", { delay: 50 });
     }
 
-    const output = fs.createWriteStream(path.join(__dirname, "public.zip"));
-    const archive = archiver("zip", {
-      zlib: { level: 9 }, // Sets the compression level
-    });
-    output.on("close", function () {
-      console.log(archive.pointer() + " total bytes");
-      console.log("Archiver has been finalized and the output file descriptor has closed.");
-    });
-    output.on("end", function () {
-      console.log("Data has been drained");
-    });
-    archive.on("warning", function (err) {
-      if (err.code === "ENOENT") {
-        // log warning
-      } else {
-        // throw error
-        throw err;
+    // ==========>
+    let downloadsCompleted = 0;
+
+    // Monitor the download directory for changes
+
+    const downloadDir = path.join(__dirname, "/public");
+    const watcher = chokidar.watch(downloadDir);
+    watcher.on("add", async (filePath) => {
+      console.log(`File downloaded: ${filePath}`);
+      downloadsCompleted++;
+      if (downloadsCompleted === links.length) {
+        console.log("All downloads completed. Starting zipping process.");
+        await startZipping();
       }
     });
-    archive.on("error", function (err) {
-      throw err;
-    });
-    archive.pipe(output);
-    archive.directory(path.join(__dirname, "public"), false);
-    await archive.finalize();
+    // ==========>
 
     console.log("Login successful");
   } catch (error) {

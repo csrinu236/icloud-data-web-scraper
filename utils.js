@@ -1,3 +1,7 @@
+const archiver = require("archiver");
+const fs = require("fs");
+const path = require("path");
+
 const downloadBlobImage = async (blobUrl) => {
   const dataUrl = async (blobUrl) => {
     const response = await fetch(blobUrl);
@@ -22,6 +26,36 @@ const downloadBlobImage = async (blobUrl) => {
   });
 };
 
+const startZipping = async () => {
+  const output = fs.createWriteStream(path.join(__dirname, "public.zip"));
+  const archive = archiver("zip", {
+    zlib: { level: 9 }, // Sets the compression level
+  });
+  output.on("close", function () {
+    console.log(archive.pointer() + " total bytes");
+    console.log("Archiver has been finalized and the output file descriptor has closed.");
+  });
+  output.on("end", function () {
+    console.log("Data has been drained");
+  });
+  archive.on("warning", function (err) {
+    if (err.code === "ENOENT") {
+      // log warning
+    } else {
+      // throw error
+      throw err;
+    }
+  });
+  archive.on("error", function (err) {
+    throw err;
+  });
+  archive.pipe(output);
+  archive.directory(path.join(__dirname, "public"), false);
+  await archive.finalize();
+  console.log("Zipping Completed Enjoy...");
+};
+
 module.exports = {
   downloadBlobImage,
+  startZipping,
 };
