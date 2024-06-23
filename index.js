@@ -167,7 +167,7 @@ const appleOtp = async (otp) => {
 
 const start = async () => {
   try {
-    app.listen(3200, () => {
+    app.listen(process.env.PORT || 3200, () => {
       console.log("APIs are running on port 3200");
     });
   } catch (error) {}
