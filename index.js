@@ -95,17 +95,19 @@ const apple = async () => {
     // console.log({ iframeHTML });
 
     const links = await photosFrame.$$(".grid-items .grid-item img");
-    // console.log({ links });
-    for (let i = 0; i < links.length; i++) {
+    console.log({ links });
+    for (let link of links) {
       // const linkFrame = await link.contentFrame();
-      const divSelector = `.grid-items .grid-item img:nth-child(${i + 1})`;
-      console.log({ divSelector, linkI: links[i] });
+      // const divSelector = `.grid-items .grid-item img:nth-child(${i + 1})`;
+      console.log({ link });
       // Replace with the actual selector of the div
-      await photosFrame.waitForSelector(divSelector, { timeout: 60000 });
+      // await photosFrame.waitForSelector(divSelector, { timeout: 60000 });
 
       // Click on the <div> element
-      await photosFrame.click(divSelector);
-      // await links[i].click();
+      // await photosFrame.click(divSelector);
+      await link.click();
+
+      await delay(2000);
       await photosFrame.waitForSelector(".DownloadButton", { timeout: 60000 });
       await photosFrame.click(".DownloadButton", { delay: 50 });
     }
