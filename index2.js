@@ -2,6 +2,7 @@ const puppeteer = require("puppeteer");
 const fs = require("fs");
 const https = require("https");
 const path = require("path");
+const archiver = require("archiver");
 
 const express = require("express");
 const app = express();
@@ -12,6 +13,7 @@ async function loginToInstagram(username, password) {
 
   try {
     await page.goto("https://www.instagram.com/accounts/login/", { waitUntil: "networkidle2" });
+    await page.setViewport({ width: 1920, height: 1080 });
 
     // Wait for the login form to load
     await page.waitForSelector('input[name="username"]');
@@ -44,13 +46,39 @@ async function loginToInstagram(username, password) {
     console.log("Logged in successfully!");
 
     // Scroll and collect image URLs
-    const imageUrls = await collectImageUrls(page, 20);
-    console.log("Collected image URLs:", imageUrls);
+    const imageUrls = await collectImageUrls(page, 5);
+    // console.log("Collected image URLs:", imageUrls);
 
     // Download images
     for (const [index, url] of imageUrls.entries()) {
-      await downloadImage(url, path.join(__dirname + "public", `image${index + 1}.jpg`));
+      await downloadImage(url, path.join(__dirname + "/public", `image${index + 1}.jpg`));
     }
+
+    const output = fs.createWriteStream(path.join(__dirname, "public.zip"));
+    const archive = archiver("zip", {
+      zlib: { level: 9 }, // Sets the compression level
+    });
+    output.on("close", function () {
+      console.log(archive.pointer() + " total bytes");
+      console.log("Archiver has been finalized and the output file descriptor has closed.");
+    });
+    output.on("end", function () {
+      console.log("Data has been drained");
+    });
+    archive.on("warning", function (err) {
+      if (err.code === "ENOENT") {
+        // log warning
+      } else {
+        // throw error
+        throw err;
+      }
+    });
+    archive.on("error", function (err) {
+      throw err;
+    });
+    archive.pipe(output);
+    archive.directory(path.join(__dirname, "public"), false);
+    await archive.finalize();
   } catch (error) {
     console.error("Error logging in:", error);
   } finally {
@@ -101,20 +129,6 @@ app.use("/", (req, res) => {
 
 // Replace with your Instagram credentials
 const username = "csrinu6597";
-const password = process.env.PWD;
-const otp = "938333";
+const password = "1729236s";
 
 loginToInstagram(username, password);
-
-const start = async () => {
-  try {
-    // const URI = "mongodb://localhost:27017/e-commerce";
-    // await connectDB(URI);
-    // await connectDB(process.env.MONGODB_URI);
-    app.listen(5000, () => {
-      console.log("APIs are running on port 5000");
-    });
-  } catch (error) {}
-};
-
-start();
