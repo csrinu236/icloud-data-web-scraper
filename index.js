@@ -27,7 +27,7 @@ app.post("/login", async (req, res) => {
     await appleLogin(ph, pwd);
     res.status(200).json({ msg: "successfully verified, please enter otp" });
   } catch (error) {
-    res.status(400).json({ msg: "enter correct otp" });
+    res.status(400).json({ msg: "enter correct otp", msg: error.message });
   }
 });
 
