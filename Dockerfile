@@ -3,9 +3,10 @@ FROM ghcr.io/puppeteer/puppeteer:22.12.0
 USER root
 
 # Add user so we don't need --no-sandbox.
-RUN mkdir -p /home/pptruser/Downloads /app/public \
+RUN mkdir -p /home/pptruser/Downloads /app/public  \
     && chown -R pptruser:pptruser /home/pptruser \
-    && chown -R pptruser:pptruser /app
+    && chown -R pptruser:pptruser /app \
+    && chown pptruser:pptruser /app/index.html /app/public/index.html
 
 # RUN mkdir -p /home/pptruser/Downloads /app/public \
 # && chown -R pptruser:pptruser /home/pptruser \
