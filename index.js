@@ -4,7 +4,7 @@ const app = express();
 const fs = require("fs");
 const path = require("path");
 const chokidar = require("chokidar");
-const { startZipping, FRAMES } = require("./utils");
+const { startZipping, FRAMES, cleanPublicFolder } = require("./utils");
 
 app.use(express.json());
 
@@ -35,6 +35,11 @@ app.post("/otp", async (req, res) => {
   const { otp } = req.body;
   console.log({ otp });
   appleOtp(otp);
+  res.status(200).json({ msg: "success" });
+});
+
+app.delete("/delete", async (req, res) => {
+  await cleanPublicFolder();
   res.status(200).json({ msg: "success" });
 });
 
@@ -136,8 +141,10 @@ const appleOtp = async (otp) => {
     await frame.waitForSelector("button.button-rounded-rectangle", { timeout: 60000 });
     await frame.click("button.button-rounded-rectangle", { delay: 50 });
 
+    await delay(10000);
+
     const pageHtml = await page.content();
-    console.log({ pageHtml });
+    console.log({ pageHtml, isFound: pageHtml.includes("href='https://www.icloud.com/photos") });
 
     await page.waitForSelector("a[href='https://www.icloud.com/photos']", { timeout: 60000 });
     await page.click('a[href="https://www.icloud.com/photos"]', { delay: 50 });

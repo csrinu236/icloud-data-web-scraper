@@ -1,5 +1,6 @@
 const archiver = require("archiver");
 const fs = require("fs");
+const fsPromises = require("fs").promises;
 const path = require("path");
 
 const downloadBlobImage = async (blobUrl) => {
@@ -63,8 +64,36 @@ const FRAMES = {
   frame: null,
 };
 
+async function cleanPublicFolder() {
+  const publicFolderPath = path.join(__dirname, "/public");
+  try {
+    const files = await fsPromises.readdir(publicFolderPath);
+    for (const file of files) {
+      const filePath = path.join(publicFolderPath, file);
+      try {
+        await fsPromises.unlink(filePath);
+        console.log(`Deleted file: ${filePath}`);
+      } catch (err) {
+        console.error(`Failed to delete file: ${filePath} - ${err}`);
+      }
+    }
+  } catch (err) {
+    console.error(`Failed to list contents of directory: ${err}`);
+  }
+  // deleting zip file
+  const zipFilePath = path.join(__dirname, "public.zip");
+  console.log({ zipFilePath });
+  try {
+    await fsPromises.unlink(zipFilePath);
+    console.log(`Deleted file: ${zipFilePath}`);
+  } catch (err) {
+    console.error(`Failed to delete file: ${zipFilePath} - ${err}`);
+  }
+}
+
 module.exports = {
   downloadBlobImage,
   startZipping,
   FRAMES,
+  cleanPublicFolder,
 };
