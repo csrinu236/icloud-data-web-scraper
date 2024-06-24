@@ -21,7 +21,9 @@ const delay = (time) =>
     }, time);
   });
 
-app.get("/", (req, res) => {
+app.use(express.static("build"));
+
+app.get("/health", (req, res) => {
   res.json({ msg: "Deploy successfull" });
 });
 
