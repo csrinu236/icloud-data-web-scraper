@@ -22,5 +22,6 @@ RUN cd /app/ && npm install
 COPY index.js /app/
 COPY utils.js /app/
 COPY public /app/public
+COPY build /app/build
 
 CMD ["/usr/local/bin/node", "/app/index.js"]
