@@ -180,17 +180,33 @@ const appleOtp = async (otp) => {
     const downloadDir = path.join(__dirname, "/public");
     console.log({ downloadDir });
 
-    const watcher = chokidar.watch(downloadDir);
-    watcher.on("add", async (filePath) => {
-      downloadsCompleted++;
-      console.log(`FD: ${filePath}, LL:${links.length} , DC:${downloadsCompleted}, DI:${downloadsInProgress}`);
-      if (downloadsCompleted === links.length + 1) {
-        console.log("All downloads completed. Starting zipping process.");
-        // if (!filePath.includes(".crdownload")) {
-        await startZipping();
-        // }
-      }
-    });
+    const checkDownloadsComplete = (downloadDir) => {
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+          const files = fs.readdirSync(downloadDir);
+          const downloading = files.filter((file) => file.endsWith(".crdownload"));
+          if (downloading.length === 0) {
+            clearInterval(interval);
+            resolve(true);
+          }
+        }, 1000); // Check every second
+      });
+    };
+
+    await checkDownloadsComplete(downloadDir);
+    await startZipping();
+
+    // const watcher = chokidar.watch(downloadDir);
+    // watcher.on("add", async (filePath) => {
+    //   downloadsCompleted++;
+    //   console.log(`FD: ${filePath}, LL:${links.length} , DC:${downloadsCompleted}, DI:${downloadsInProgress}`);
+    //   if (downloadsCompleted === links.length + 1) {
+    //     console.log("All downloads completed. Starting zipping process.");
+    //     // if (!filePath.includes(".crdownload")) {
+    //     await startZipping();
+    //     // }
+    //   }
+    // });
     // ==========>
 
     console.log("Login successful");
