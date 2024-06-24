@@ -135,6 +135,10 @@ const appleOtp = async (otp) => {
 
     await frame.waitForSelector("button.button-rounded-rectangle", { timeout: 60000 });
     await frame.click("button.button-rounded-rectangle", { delay: 50 });
+
+    const pageHtml = await page.content();
+    console.log({ pageHtml });
+
     await page.waitForSelector("a[href='https://www.icloud.com/photos']", { timeout: 60000 });
     await page.click('a[href="https://www.icloud.com/photos"]', { delay: 50 });
     await page.waitForNavigation({ waitUntil: "networkidle2" });
