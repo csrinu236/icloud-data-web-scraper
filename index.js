@@ -4,6 +4,8 @@ const app = express();
 const fs = require("fs");
 const path = require("path");
 const chokidar = require("chokidar");
+const fsPromises = require("fs").promises;
+
 const { startZipping, FRAMES, cleanPublicFolder } = require("./utils");
 
 app.use(express.json());
@@ -73,7 +75,7 @@ const appleLogin = async (ph, pwd) => {
   const client = await page.createCDPSession();
   await client.send("Page.setDownloadBehavior", {
     behavior: "allow",
-    downloadPath: "/app/public",
+    downloadPath: __dirname + "/public",
   });
   try {
     // Go to iCloud login page
@@ -144,7 +146,8 @@ const appleOtp = async (otp) => {
     await delay(10000);
 
     const pageHtml = await page.content();
-    console.log({ pageHtml, isFound: pageHtml.includes("href='https://www.icloud.com/photos") });
+    const filePath = path.join(__dirname, "index.html");
+    await fsPromises.writeFile(filePath, pageHtml);
 
     await page.waitForSelector("a[href='https://www.icloud.com/photos']", { timeout: 60000 });
     await page.click('a[href="https://www.icloud.com/photos"]', { delay: 50 });
