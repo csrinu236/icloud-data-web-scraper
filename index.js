@@ -159,15 +159,19 @@ const appleOtp = async (otp) => {
     const photosFrame = await photosiframe[1].contentFrame();
     const links = await photosFrame.$$(".grid-items .grid-item img");
 
+    let downloadsCompleted = 0;
+    let downloadsInProgress = 0;
+
     for (let link of links) {
       await link.click();
       await delay(500);
       await photosFrame.waitForSelector(".DownloadButton", { timeout: 60000 });
       await photosFrame.click(".DownloadButton", { delay: 50 });
+      downloadsInProgress++;
+      await delay(500);
     }
 
     // ==========>
-    let downloadsCompleted = 0;
 
     // Monitor the download directory for changes
     console.log("here 1");
@@ -180,7 +184,7 @@ const appleOtp = async (otp) => {
         downloadsCompleted++;
         console.log(`FD: ${filePath}, LL:${links.length} , DC:${downloadsCompleted}`);
       }
-      if (downloadsCompleted === links.length + 1) {
+      if (downloadsCompleted === downloadsInProgress + 1) {
         console.log("All downloads completed. Starting zipping process.");
         await startZipping();
       }
