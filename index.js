@@ -59,7 +59,11 @@ app.get("/download-zip", async (req, res) => {
 });
 
 const appleLogin = async (ph, pwd) => {
-  browser = await puppeteer.launch({ headless: true });
+  browser = await puppeteer.launch({
+    headless: true,
+    ignoreHTTPSErrors: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-sync", "--ignore-certificate-errors"],
+  });
   page = await browser.newPage();
   const client = await page.createCDPSession();
   await client.send("Page.setDownloadBehavior", {
