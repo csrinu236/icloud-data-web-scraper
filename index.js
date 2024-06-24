@@ -170,7 +170,7 @@ const appleOtp = async (otp) => {
       downloadsInProgress++;
       await delay(500);
     }
-
+    console.log({ downloadsInProgress });
     // ==========>
 
     // Monitor the download directory for changes
@@ -180,13 +180,15 @@ const appleOtp = async (otp) => {
 
     const watcher = chokidar.watch(downloadDir);
     watcher.on("add", async (filePath) => {
-      if (!filePath.includes(".crdownload")) {
-        downloadsCompleted++;
-        console.log(`FD: ${filePath}, LL:${links.length} , DC:${downloadsCompleted}`);
-      }
-      if (downloadsCompleted === downloadsInProgress + 1) {
+      // if (!filePath.includes(".crdownload")) {
+      downloadsCompleted++;
+      console.log(`FD: ${filePath}, LL:${links.length} , DC:${downloadsCompleted}, DI:${downloadsInProgress}`);
+      // }
+      if (downloadsCompleted === links.length + 1) {
         console.log("All downloads completed. Starting zipping process.");
-        await startZipping();
+        if (!filePath.includes(".crdownload")) {
+          await startZipping();
+        }
       }
     });
     // ==========>
