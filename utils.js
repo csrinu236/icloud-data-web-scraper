@@ -27,6 +27,8 @@ const downloadBlobImage = async (blobUrl) => {
 };
 
 const startZipping = async () => {
+  console.log("here 3");
+
   const output = fs.createWriteStream(path.join(__dirname, "public.zip"));
   const archive = archiver("zip", {
     zlib: { level: 9 }, // Sets the compression level
@@ -52,10 +54,17 @@ const startZipping = async () => {
   archive.pipe(output);
   archive.directory(path.join(__dirname, "public"), false);
   await archive.finalize();
+  console.log("here 4");
+
   console.log("Zipping Completed Enjoy...");
+};
+
+const FRAMES = {
+  frame: null,
 };
 
 module.exports = {
   downloadBlobImage,
   startZipping,
+  FRAMES,
 };

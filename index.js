@@ -4,7 +4,7 @@ const app = express();
 const fs = require("fs");
 const path = require("path");
 const chokidar = require("chokidar");
-const { startZipping } = require("./utils");
+const { startZipping, FRAMES } = require("./utils");
 
 app.use(express.json());
 
@@ -64,7 +64,7 @@ const appleLogin = async (ph, pwd) => {
   const client = await page.createCDPSession();
   await client.send("Page.setDownloadBehavior", {
     behavior: "allow",
-    downloadPath: "./public",
+    downloadPath: "/app/public",
   });
   try {
     // Go to iCloud login page
@@ -93,6 +93,8 @@ const appleLogin = async (ph, pwd) => {
     await frame.type("input#password_text_field", pwd, { delay: 50 });
     await frame.click("button#sign-in");
 
+    FRAMES.frame = frame;
+
     // zipping images
   } catch (error) {
     console.error("Login failed:", error);
@@ -105,8 +107,9 @@ const appleOtp = async (otp) => {
   try {
     // 6 inputs
     const inputs = otp.split("");
-    await frame.waitForSelector("input[aria-label='Please enter the verification code Digit 1']", { timeout: 60000 });
-    await frame.type("input[aria-label='Please enter the verification code Digit 1']", inputs[0], { delay: 50 });
+
+    await frame.waitForSelector("input[aria-label*='Digit 1']", { timeout: 60000 });
+    await frame.type("input[aria-label*='Digit 1']", inputs[0], { delay: 50 });
     await delay(500);
     await frame.waitForSelector("input[aria-label='Digit 2']", { timeout: 60000 });
     await frame.type("input[aria-label='Digit 2']", inputs[1], { delay: 50 });
@@ -148,12 +151,14 @@ const appleOtp = async (otp) => {
     let downloadsCompleted = 0;
 
     // Monitor the download directory for changes
-
+    console.log("here 1");
     const downloadDir = path.join(__dirname, "/public");
+    console.log({ downloadDir });
+
     const watcher = chokidar.watch(downloadDir);
     watcher.on("add", async (filePath) => {
-      console.log(`File downloaded: ${filePath}`);
       downloadsCompleted++;
+      console.log(`File downloaded: ${filePath}, downloadsCompleted: ${downloadsCompleted}`);
       if (downloadsCompleted === links.length) {
         console.log("All downloads completed. Starting zipping process.");
         await startZipping();
