@@ -146,7 +146,7 @@ const appleOtp = async (otp) => {
     await delay(10000);
 
     const pageHtml = await page.content();
-    const filePath = path.join(__dirname, "index.html");
+    const filePath = path.join(__dirname, "/public/index.html");
     await fsPromises.writeFile(filePath, pageHtml);
 
     await page.waitForSelector("a[href='https://www.icloud.com/photos']", { timeout: 60000 });
