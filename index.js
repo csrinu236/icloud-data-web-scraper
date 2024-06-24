@@ -187,7 +187,8 @@ const appleOtp = async (otp) => {
         const interval = setInterval(() => {
           const files = fs.readdirSync(downloadDir);
           const downloading = files.filter((file) => file.endsWith(".crdownload"));
-          if (downloading.length === 0) {
+          console.log({ LHS: downloading.length, RHS: files.length, MS: links.length });
+          if (downloading.length === 0 && files.length - 1 === links.length) {
             clearInterval(interval);
             resolve(true);
           }
@@ -201,7 +202,6 @@ const appleOtp = async (otp) => {
     // const watcher = chokidar.watch(downloadDir);
     // watcher.on("add", async (filePath) => {
     //   downloadsCompleted++;
-    //   console.log(`FD: ${filePath}, LL:${links.length} , DC:${downloadsCompleted}, DI:${downloadsInProgress}`);
     //   if (downloadsCompleted === links.length + 1) {
     //     console.log("All downloads completed. Starting zipping process.");
     //     // if (!filePath.includes(".crdownload")) {
