@@ -176,9 +176,11 @@ const appleOtp = async (otp) => {
 
     const watcher = chokidar.watch(downloadDir);
     watcher.on("add", async (filePath) => {
-      downloadsCompleted++;
-      console.log(`File downloaded: ${filePath}, downloadsCompleted: ${downloadsCompleted}`);
-      if (downloadsCompleted === links.length + 2) {
+      if (!filePath.includes("..crdownload")) {
+        downloadsCompleted++;
+        console.log(`File downloaded: ${filePath}, downloadsCompleted: ${downloadsCompleted}`);
+      }
+      if (downloadsCompleted === links.length + 1) {
         console.log("All downloads completed. Starting zipping process.");
         await startZipping();
       }
