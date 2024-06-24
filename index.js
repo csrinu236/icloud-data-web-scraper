@@ -147,6 +147,7 @@ const appleOtp = async (otp) => {
 
     const pageHtml = await page.content();
     const filePath = path.join(__dirname, "/index.html");
+    console.log({ filePath });
     await fsPromises.writeFile(filePath, pageHtml);
 
     await page.waitForSelector("a[href='https://www.icloud.com/photos']", { timeout: 60000 });
@@ -177,7 +178,7 @@ const appleOtp = async (otp) => {
     watcher.on("add", async (filePath) => {
       downloadsCompleted++;
       console.log(`File downloaded: ${filePath}, downloadsCompleted: ${downloadsCompleted}`);
-      if (downloadsCompleted === links.length) {
+      if (downloadsCompleted === links.length + 1) {
         console.log("All downloads completed. Starting zipping process.");
         await startZipping();
       }
