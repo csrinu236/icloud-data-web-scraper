@@ -178,7 +178,7 @@ const appleOtp = async (otp) => {
     watcher.on("add", async (filePath) => {
       if (!filePath.includes(".crdownload")) {
         downloadsCompleted++;
-        console.log(`File downloaded: ${filePath}, downloadsCompleted: ${downloadsCompleted}`);
+        console.log(`FD: ${filePath}, LL:${links.length} , DC:${downloadsCompleted}`);
       }
       if (downloadsCompleted === links.length + 1) {
         console.log("All downloads completed. Starting zipping process.");
