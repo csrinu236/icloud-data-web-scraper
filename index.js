@@ -176,7 +176,7 @@ const appleOtp = async (otp) => {
 
     const watcher = chokidar.watch(downloadDir);
     watcher.on("add", async (filePath) => {
-      if (!filePath.includes("..crdownload")) {
+      if (!filePath.includes(".crdownload")) {
         downloadsCompleted++;
         console.log(`File downloaded: ${filePath}, downloadsCompleted: ${downloadsCompleted}`);
       }
