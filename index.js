@@ -180,15 +180,13 @@ const appleOtp = async (otp) => {
 
     const watcher = chokidar.watch(downloadDir);
     watcher.on("add", async (filePath) => {
-      // if (!filePath.includes(".crdownload")) {
       downloadsCompleted++;
       console.log(`FD: ${filePath}, LL:${links.length} , DC:${downloadsCompleted}, DI:${downloadsInProgress}`);
-      // }
       if (downloadsCompleted === links.length + 1) {
         console.log("All downloads completed. Starting zipping process.");
-        if (!filePath.includes(".crdownload")) {
-          await startZipping();
-        }
+        // if (!filePath.includes(".crdownload")) {
+        await startZipping();
+        // }
       }
     });
     // ==========>
