@@ -4,7 +4,7 @@ USER root
 
 # Add user so we don't need --no-sandbox.
 RUN mkdir -p /home/pptruser/Downloads /app/public  /app/index.html \
-    && chown pptruser:pptruser /app/index.html /app/public/index.html \
+    && chown pptruser:pptruser /app/index.html  \
     && chown -R pptruser:pptruser /home/pptruser \
     && chown -R pptruser:pptruser /app 
 
