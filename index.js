@@ -5,10 +5,12 @@ const fs = require("fs");
 const path = require("path");
 const chokidar = require("chokidar");
 const fsPromises = require("fs").promises;
+const cors = require("cors");
 
 const { startZipping, FRAMES, cleanPublicFolder } = require("./utils");
 
 app.use(express.json());
+app.use(cors());
 
 let browser, page, frame, photosFrame;
 
