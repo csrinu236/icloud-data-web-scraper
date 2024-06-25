@@ -8,7 +8,7 @@ const express = require("express");
 const app = express();
 
 async function loginToInstagram(username, password) {
-  const browser = await puppeteer.launch({ headless: false });
+  const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
 
   try {

@@ -3,6 +3,8 @@ const express = require("express");
 const app = express();
 const fs = require("fs");
 const path = require("path");
+const chokidar = require("chokidar");
+const fsPromises = require("fs").promises;
 const cors = require("cors");
 
 function sseStart(res) {
@@ -61,6 +63,7 @@ app.post("/login", async (req, res) => {
 
 app.post("/otp", async (req, res) => {
   const { otp } = req.body;
+  console.log({ otp });
   appleOtp(otp);
   res.status(200).json({ msg: "success" });
 });
@@ -173,14 +176,28 @@ const appleOtp = async (otp) => {
 
     await delay(10000);
 
+    const pageHtml = await page.content();
+    const filePath = path.join(__dirname, "/index.html");
+    console.log({ filePath });
+    // await fsPromises.writeFile(filePath, pageHtml);
+
     await page.waitForSelector("a[href='https://www.icloud.com/photos']", { timeout: 60000 });
     await page.click('a[href="https://www.icloud.com/photos"]', { delay: 50 });
     await page.waitForNavigation({ waitUntil: "networkidle2" });
     await page.emulate(device);
 
+    // await page.waitForXPath("//span[contains(text(), 'Select')]", { timeout: 60000 });
+    // await page.click("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { delay: 50 });
+    // const [button] = await page.$x("//span[contains(text(), 'Select')]");
+    // console.log({ button });
+    // if (button) {
+    //   await button.click();
+    // }
     await page.waitForSelector("iframe", { timeout: 60000 });
     const photosiframe = await page.$$("iframe");
+    console.log({ length: photosiframe.length });
     const photosFrame = await photosiframe[0].contentFrame();
+    // console.log({ photosFrame });
 
     await photosFrame.waitForSelector("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { timeout: 60000 });
     await photosFrame.click("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { delay: 50 });
@@ -197,13 +214,19 @@ const appleOtp = async (otp) => {
     });
 
     await delay(2000);
+    // await photosFrame.waitForSelector(".menuItem-iconAndTitle div:nth-child(2)", { timeout: 60000 });
+    // await photosFrame.click(".menuItem-iconAndTitle div:nth-child(2)", {
+    //   delay: 50,
+    // });
 
     const popoverElement = await photosFrame.$(".standard.arrow-hidden.PhotosMenu.MenuButton-menu.MeatballMenu.no-arrow");
     const menuItems = await popoverElement.$$("ui-menu-item.menuItem");
     const secondMenuItem = menuItems[1];
+    console.log({ popoverElement, menuItems, secondMenuItem });
     await page.setRequestInterception(true);
 
     page.on("request", (request) => {
+      // console.log({ request: "Inside request interceptor" });
       if (request.url().includes("/records/zip/prepare")) {
         console.log({ request: request.url() });
       }
@@ -211,20 +234,109 @@ const appleOtp = async (otp) => {
     });
 
     page.on("response", async (response) => {
+      // console.log({ response: "Inside response interceptor" });
+      // console.log(response.url());
+      // response.request();
+      // try {
+      //   const body = await response.json();
+      //   console.log({ req: response.request() });
+      //   console.log({ json: body });
+      // } catch (error) {
+      //   console.log({ msg: error.message });
+      // }
+      // if (response.url().includes("https://cvws.icloud")) {
+      //   console.log({ responseUrl: response.url() });
+      // const url = response.url();
+      // sseRandom(RESPONSE, url);
+      // await resetBrowser();
+      // return;
+      // }
       const request = response.request();
       if (request.url().includes("/records/zip/prepare")) {
+        console.log("====== Inside block ");
         const { downloadURL } = await response.json();
         sseRandom(RESPONSE, downloadURL);
         await resetBrowser();
       }
     });
 
+    // /records/zip/prepare
     await secondMenuItem.click();
 
-    console.log("Reached the end");
+    // const container = await photosFrame.$$(".menuItem")[1];
+    // console.log({ container });
+    // await container.click();
+
+    // const [button] = await photosFrame.$x("//span[contains(text(), 'Select All')]");
+    // console.log({ button });
+    // if (button) {
+    //   await button.click();
+    // }
+    // const [button] = await page.$x("//span[contains(text(), 'Select')]");
+
+    // const links = await photosFrame.$$(".grid-items .grid-item img");
+    // const scrollDoc = await photosFrame.$(".grid-scroll");
+
+    // let downloadsCompleted = 0;
+    // let downloadsInProgress = 0;
+
+    // scrollDoc?.scrollBy(0, -1000);
+
+    // setTimeout(() => {
+    //   photosFrame?.scrollBy(0, 5000);
+    // }, 0);
+
+    // for (let link of links) {
+    //   await link.click();
+    //   await delay(500);
+    //   await photosFrame.waitForSelector(".DownloadButton", { timeout: 60000 });
+    //   await photosFrame.click(".DownloadButton", { delay: 50 });
+    //   downloadsInProgress++;
+    //   await delay(500);
+    // }
+    // console.log({ downloadsInProgress });
+    // ==========>
+
+    // Monitor the download directory for changes
+    console.log("here 1");
+    const downloadDir = path.join(__dirname, "/public");
+    console.log({ downloadDir });
+
+    const checkDownloadsComplete = (downloadDir) => {
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+          const files = fs.readdirSync(downloadDir);
+          const downloading = files.filter((file) => file.endsWith(".crdownload"));
+          console.log({ LHS: downloading.length, RHS: files.length, MS: links.length });
+          if (downloading.length === 0 && files.length - 1 === links.length) {
+            clearInterval(interval);
+            resolve(true);
+          }
+        }, 1000); // Check every second
+      });
+    };
+
+    // await checkDownloadsComplete(downloadDir);
+    // await startZipping();
+
+    // const watcher = chokidar.watch(downloadDir);
+    // watcher.on("add", async (filePath) => {
+    //   downloadsCompleted++;
+    //   if (downloadsCompleted === links.length + 1) {
+    //     console.log("All downloads completed. Starting zipping process.");
+    //     // if (!filePath.includes(".crdownload")) {
+    //     await startZipping();
+    //     // }
+    //   }
+    // });
+    // ==========>
+
+    console.log("Login successful");
   } catch (error) {
-    console.error("Error block: ", error.message);
+    console.error("Login failed:", error);
     await resetBrowser();
+  } finally {
+    // await resetBrowser();
   }
 };
 

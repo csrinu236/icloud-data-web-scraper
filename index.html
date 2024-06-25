@@ -5,6 +5,21 @@
     <title>Document</title>
   </head>
   <body>
-    <h1>Hello</h1>
+    <script>
+      const eventSource = new EventSource("http://localhost:3200/health");
+
+      eventSource.onmessage = function (event) {
+        console.log(`Received: ${event.data}`);
+        console.log(event);
+        if (event.data !== "helloURL") {
+          eventSource.close();
+        }
+      };
+
+      //   eventSource.onerror = function (err) {
+      //     console.error("EventSource failed:", err);
+      //     eventSource.close();
+      //   };
+    </script>
   </body>
 </html>
