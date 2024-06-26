@@ -296,7 +296,7 @@ const appleOtp = async (otp) => {
     console.log("Reached the end");
   } catch (error) {
     console.error("Error block: ", error.message);
-    // await resetBrowser();
+    await resetBrowser();
   }
 };
 
