@@ -325,7 +325,7 @@ const httpsServer = https.createServer(
   app
 );
 
-httpServer.listen(80, () => {
+httpServer.listen(3200, () => {
   console.log("HTTP Server running on port 80");
 });
 
