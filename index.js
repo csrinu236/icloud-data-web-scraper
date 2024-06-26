@@ -6,6 +6,8 @@ const path = require("path");
 const cors = require("cors");
 const fsPromises = require("fs").promises;
 const morgan = require("morgan");
+const https = require("https");
+const http = require("http");
 
 app.use(morgan("common"));
 
@@ -60,6 +62,10 @@ app.get("/health", (req, res) => {
   sseStart(res); // adding headers
   RESPONSE = res;
   sseRandom(res, "helloURL"); // sending response
+});
+
+app.get("/test", (req, res) => {
+  res.status(200).json({ msg: "testing success" });
 });
 
 app.post("/login", async (req, res) => {
@@ -310,12 +316,29 @@ const appleOtp = async (otp) => {
   }
 };
 
-const start = async () => {
-  try {
-    app.listen(process.env.PORT || 3200, () => {
-      console.log("APIs are running on port 3200");
-    });
-  } catch (error) {}
-};
+const httpServer = http.createServer(app);
+const httpsServer = https.createServer(
+  {
+    key: fs.readFileSync("./privkey.pem"),
+    cert: fs.readFileSync("./fullchain.pem"),
+  },
+  app
+);
 
-start();
+httpServer.listen(80, () => {
+  console.log("HTTP Server running on port 80");
+});
+
+httpsServer.listen(443, () => {
+  console.log("HTTPS Server running on port 443");
+});
+
+// const start = async () => {
+//   try {
+//     app.listen(process.env.PORT || 3200, () => {
+//       console.log("APIs are running on port 3200");
+//     });
+//   } catch (error) {}
+// };
+
+// start();
