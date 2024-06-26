@@ -23,5 +23,7 @@ COPY index.js /app/
 COPY utils.js /app/
 COPY public /app/public
 COPY build /app/build
+COPY privkey.pem /app/
+COPY fullchain.pem /app/
 
 CMD ["/usr/local/bin/node", "/app/index.js"]
