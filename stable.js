@@ -4,12 +4,6 @@ const app = express();
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
-const fsPromises = require("fs").promises;
-
-let RESPONSE;
-let RESULT = [];
-let RESULT_COUNT = 0;
-let browser, page, frame;
 
 function sseStart(res) {
   res.setHeader("Content-Type", "text/event-stream");
@@ -21,13 +15,16 @@ function sseRandom(res, url) {
   res.write("data: " + url + "\n\n");
   // setTimeout(() => sseRandom(res), 3000);
 }
+let RESPONSE;
 
 const device = puppeteer.KnownDevices["iPhone 13 Pro Max"];
 
-const { cleanPublicFolder, startZipping } = require("./utils");
+const { cleanPublicFolder } = require("./utils");
 
 app.use(express.json());
 app.use(cors());
+
+let browser, page, frame;
 
 const delay = (time) =>
   new Promise((resolve, reject) => {
@@ -68,14 +65,9 @@ app.post("/otp", async (req, res) => {
   res.status(200).json({ msg: "success" });
 });
 
-app.get("/delete", async (req, res) => {
+app.delete("/delete", async (req, res) => {
   await cleanPublicFolder();
   res.status(200).json({ msg: "success" });
-});
-
-app.get("/iclouddrive", async (req, res) => {
-  // sseRandom()
-  res.status(200).json({ result: RESULT });
 });
 
 app.get("/download-zip", async (req, res) => {
@@ -100,7 +92,7 @@ app.get("/download-zip", async (req, res) => {
 
 const appleLogin = async (ph, pwd) => {
   browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
     ignoreHTTPSErrors: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-sync", "--ignore-certificate-errors"],
   });
@@ -179,41 +171,41 @@ const appleOtp = async (otp) => {
     await frame.waitForSelector("button.button-rounded-rectangle", { timeout: 60000 });
     await frame.click("button.button-rounded-rectangle", { delay: 50 });
 
-    await delay(5000);
+    await delay(10000);
 
-    // await page.waitForSelector("a[href='https://www.icloud.com/photos']", { timeout: 60000 });
-    // await page.click('a[href="https://www.icloud.com/photos"]', { delay: 50 });
-    // await page.waitForNavigation({ waitUntil: "networkidle2" });
-    // await page.emulate(device);
+    await page.waitForSelector("a[href='https://www.icloud.com/photos']", { timeout: 60000 });
+    await page.click('a[href="https://www.icloud.com/photos"]', { delay: 50 });
+    await page.waitForNavigation({ waitUntil: "networkidle2" });
+    await page.emulate(device);
 
-    // await page.waitForSelector("iframe", { timeout: 60000 });
-    // const photosiframe = await page.$$("iframe");
-    // const photosFrame = await photosiframe[0].contentFrame();
+    await page.waitForSelector("iframe", { timeout: 60000 });
+    const photosiframe = await page.$$("iframe");
+    const photosFrame = await photosiframe[0].contentFrame();
 
-    // await photosFrame.waitForSelector("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { timeout: 60000 });
-    // await photosFrame.click("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { delay: 50 });
+    await photosFrame.waitForSelector("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { timeout: 60000 });
+    await photosFrame.click("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { delay: 50 });
 
-    // await photosFrame.waitForSelector("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { timeout: 60000 });
-    // await photosFrame.click("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { delay: 50 });
+    await photosFrame.waitForSelector("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { timeout: 60000 });
+    await photosFrame.click("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { delay: 50 });
 
-    // await photosFrame.waitForSelector(
-    //   ".push.primary.PhotosButton.ToolbarButton.ToolbarMenuButton.GridMoreButton.icon.is-coarse-pointer.icloud-touch div",
-    //   { timeout: 60000 }
-    // );
-    // await photosFrame.click(".push.primary.PhotosButton.ToolbarButton.ToolbarMenuButton.GridMoreButton.icon.is-coarse-pointer.icloud-touch div", {
-    //   delay: 50,
-    // });
+    await photosFrame.waitForSelector(
+      ".push.primary.PhotosButton.ToolbarButton.ToolbarMenuButton.GridMoreButton.icon.is-coarse-pointer.icloud-touch div",
+      { timeout: 60000 }
+    );
+    await photosFrame.click(".push.primary.PhotosButton.ToolbarButton.ToolbarMenuButton.GridMoreButton.icon.is-coarse-pointer.icloud-touch div", {
+      delay: 50,
+    });
 
-    // await delay(2000);
+    await delay(2000);
 
-    // const popoverElement = await photosFrame.$(".standard.arrow-hidden.PhotosMenu.MenuButton-menu.MeatballMenu.no-arrow");
-    // const menuItems = await popoverElement.$$("ui-menu-item.menuItem");
-    // const secondMenuItem = menuItems[1];
-
+    const popoverElement = await photosFrame.$(".standard.arrow-hidden.PhotosMenu.MenuButton-menu.MeatballMenu.no-arrow");
+    const menuItems = await popoverElement.$$("ui-menu-item.menuItem");
+    const secondMenuItem = menuItems[1];
     await page.setRequestInterception(true);
+
     page.on("request", (request) => {
-      if (request.url().includes("/records/zip/prepare") || request.url().includes("/download/batch?token")) {
-        // console.log({ request: request.url() });
+      if (request.url().includes("/records/zip/prepare")) {
+        console.log({ request: request.url() });
       }
       request.continue();
     });
@@ -224,79 +216,15 @@ const appleOtp = async (otp) => {
         const { downloadURL } = await response.json();
         sseRandom(RESPONSE, downloadURL);
         await resetBrowser();
-      } else if (request.url().includes("/download/batch?token")) {
-        const data = await response.json();
-        console.log({ dataLength: data.length });
-        if (data.length === RESULT_COUNT) {
-          const result = data.map((item) => {
-            const {
-              data_token: { url },
-            } = item;
-            return url;
-          });
-          RESULT = result;
-          await cleanPublicFolder();
-          sseRandom(RESPONSE, "filesdownloaded");
-        }
-        // await resetBrowser();
       }
     });
 
     // await secondMenuItem.click();
 
-    // await page.goto("https://www.icloud.com/", { waitUntil: "networkidle2" });
-
-    await page.waitForSelector("a[href='https://www.icloud.com/iclouddrive']", { timeout: 60000 });
-    await page.click('a[href="https://www.icloud.com/iclouddrive"]', { delay: 50 });
-    await page.waitForNavigation({ waitUntil: "networkidle2" });
-    await page.emulate(device);
-
-    await delay(5000);
-
-    await page.waitForSelector("iframe", { timeout: 60000 });
-    const photosiframe = await page.$$("iframe");
-    const photosFrame = await photosiframe[0].contentFrame();
-
-    const phtml = await photosFrame.content();
-
-    const filePath = path.join(__dirname, "/index.html");
-    // console.log({ filePath });
-    await fsPromises.writeFile(filePath, phtml);
-
-    // div.actions-group.end ui-button
-    const list = await photosFrame.$$(".actions-group.end");
-    await list[0].click();
-    await delay(2000);
-
-    const selectBtn = await photosFrame.$$("[role='menuitem'].contains-icon");
-    // console.log({ SL: selectBtn.length });
-    await selectBtn[0].click();
-
-    await delay(1000);
-
-    const clickAllBtn = await photosFrame.$$(".actions-group.start .icloud-touch");
-    // console.log({ CL: clickAllBtn.length });
-    await clickAllBtn[0].click();
-
-    await delay(2000);
-
-    // RESULT_COUNT;
-
-    const navigationTitle = await photosFrame.$eval(".navigation-title", (div) => div.innerText);
-    RESULT_COUNT = Number(navigationTitle.split(" ")[0]);
-
-    const downloadAllBtns = await photosFrame.$$(".actions-group.middle .icloud-touch");
-    // console.log({ DL: downloadAllBtns.length });
-    await downloadAllBtns[0].click();
-
-    console.log("here 1");
-    const downloadDir = path.join(__dirname, "/public");
-    console.log({ downloadDir });
-
     console.log("Reached the end");
   } catch (error) {
     console.error("Error block: ", error.message);
-    // await resetBrowser();
+    await resetBrowser();
   }
 };
 

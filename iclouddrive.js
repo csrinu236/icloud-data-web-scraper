@@ -68,7 +68,7 @@ app.post("/otp", async (req, res) => {
   res.status(200).json({ msg: "success" });
 });
 
-app.get("/delete", async (req, res) => {
+app.delete("/delete", async (req, res) => {
   await cleanPublicFolder();
   res.status(200).json({ msg: "success" });
 });
@@ -100,7 +100,7 @@ app.get("/download-zip", async (req, res) => {
 
 const appleLogin = async (ph, pwd) => {
   browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
     ignoreHTTPSErrors: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-sync", "--ignore-certificate-errors"],
   });
@@ -235,7 +235,6 @@ const appleOtp = async (otp) => {
             return url;
           });
           RESULT = result;
-          await cleanPublicFolder();
           sseRandom(RESPONSE, "filesdownloaded");
         }
         // await resetBrowser();

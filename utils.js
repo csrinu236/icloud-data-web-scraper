@@ -30,7 +30,7 @@ const downloadBlobImage = async (blobUrl) => {
 const startZipping = async () => {
   console.log("here 3");
 
-  const output = fs.createWriteStream(path.join(__dirname, "public.zip"));
+  const output = fs.createWriteStream(path.join(__dirname, "iclouddrive.zip"));
   const archive = archiver("zip", {
     zlib: { level: 9 }, // Sets the compression level
   });
@@ -70,9 +70,12 @@ async function cleanPublicFolder() {
     const files = await fsPromises.readdir(publicFolderPath);
     for (const file of files) {
       const filePath = path.join(publicFolderPath, file);
+
       try {
-        await fsPromises.unlink(filePath);
-        console.log(`Deleted file: ${filePath}`);
+        if (!filePath.includes(".gitkeep")) {
+          await fsPromises.unlink(filePath);
+          console.log(`Deleted file: ${filePath}`);
+        }
       } catch (err) {
         console.error(`Failed to delete file: ${filePath} - ${err}`);
       }
@@ -81,14 +84,14 @@ async function cleanPublicFolder() {
     console.error(`Failed to list contents of directory: ${err}`);
   }
   // deleting zip file
-  const zipFilePath = path.join(__dirname, "public.zip");
-  console.log({ zipFilePath });
-  try {
-    await fsPromises.unlink(zipFilePath);
-    console.log(`Deleted file: ${zipFilePath}`);
-  } catch (err) {
-    console.error(`Failed to delete file: ${zipFilePath} - ${err}`);
-  }
+  // const zipFilePath = path.join(__dirname, "public.zip");
+  // console.log({ zipFilePath });
+  // try {
+  //   await fsPromises.unlink(zipFilePath);
+  //   console.log(`Deleted file: ${zipFilePath}`);
+  // } catch (err) {
+  //   console.error(`Failed to delete file: ${zipFilePath} - ${err}`);
+  // }
 }
 
 module.exports = {
