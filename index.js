@@ -316,29 +316,29 @@ const appleOtp = async (otp) => {
   }
 };
 
-const httpServer = http.createServer(app);
-const httpsServer = https.createServer(
-  {
-    cert: fs.readFileSync(__dirname + "/ssl/fullchain.pem"),
-    key: fs.readFileSync(__dirname + "/ssl/privkey.pem"),
-  },
-  app
-);
+// const httpServer = http.createServer(app);
+// const httpsServer = https.createServer(
+//   {
+//     cert: fs.readFileSync(__dirname + "/ssl/fullchain.pem"),
+//     key: fs.readFileSync(__dirname + "/ssl/privkey.pem"),
+//   },
+//   app
+// );
 
-httpServer.listen(3300, () => {
-  console.log("HTTP Server running on port 80");
-});
+// httpServer.listen(3300, () => {
+//   console.log("HTTP Server running on port 80");
+// });
 
-httpsServer.listen(3400, () => {
-  console.log("HTTPS Server running on port 443");
-});
+// httpsServer.listen(3400, () => {
+//   console.log("HTTPS Server running on port 443");
+// });
 
-// const start = async () => {
-//   try {
-//     app.listen(process.env.PORT || 3200, () => {
-//       console.log("APIs are running on port 3200");
-//     });
-//   } catch (error) {}
-// };
+const start = async () => {
+  try {
+    app.listen(process.env.PORT || 3200, () => {
+      console.log("APIs are running on port 3200");
+    });
+  } catch (error) {}
+};
 
-// start();
+start();
