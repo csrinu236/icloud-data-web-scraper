@@ -26,6 +26,7 @@ COPY build /app/build
 COPY privkey.pem /app/
 COPY fullchain.pem /app/
 
-EXPOSE 3200 443
+EXPOSE 80
+EXPOSE 443
 
 CMD ["/usr/local/bin/node", "/app/index.js"]
