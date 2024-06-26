@@ -264,7 +264,7 @@ const appleOtp = async (otp) => {
 
     await page.waitForSelector("a[href='https://www.icloud.com/iclouddrive']", { timeout: 60000 });
     await page.click('a[href="https://www.icloud.com/iclouddrive"]', { delay: 50 });
-    await page.waitForNavigation({ waitUntil: "networkidle2" });
+    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 });
     await page.emulate(device);
 
     await delay(5000);
