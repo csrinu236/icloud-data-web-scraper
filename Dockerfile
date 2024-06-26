@@ -23,8 +23,7 @@ COPY index.js /app/
 COPY utils.js /app/
 COPY public /app/public
 COPY build /app/build
-COPY privkey.pem /app/
-COPY fullchain.pem /app/
+
 
 EXPOSE 80
 EXPOSE 443
