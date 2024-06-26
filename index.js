@@ -5,6 +5,9 @@ const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
 const fsPromises = require("fs").promises;
+const morgan = require("morgan");
+
+app.use(morgan("common"));
 
 let RESPONSE;
 let RESULT = [];
@@ -15,6 +18,7 @@ function sseStart(res) {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+  res.setHeader("Content-Encoding", "none");
 }
 
 function sseRandom(res, url) {
