@@ -25,7 +25,9 @@ COPY public /app/public
 COPY build /app/build
 
 
-EXPOSE 80
-EXPOSE 443
+# EXPOSE 80
+# EXPOSE 443
+EXPOSE 3300
+EXPOSE 3400
 
 CMD ["/usr/local/bin/node", "/app/index.js"]
