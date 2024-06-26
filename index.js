@@ -19,6 +19,12 @@ function sseStart(res) {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("Content-Encoding", "none");
+  res.setHeader("X-Accel-Buffering", "no");
+  try {
+    res.flushHeaders();
+  } catch (error) {
+    console.log(error.message);
+  }
 }
 
 function sseRandom(res, url) {
