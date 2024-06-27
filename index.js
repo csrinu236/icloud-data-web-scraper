@@ -15,6 +15,7 @@ let RESPONSE;
 let RESULT = [];
 let RESULT_COUNT = 0;
 let browser, page, frame;
+let currentPuppeterStatus = "LOGIN";
 
 function sseStart(res) {
   res.setHeader("Content-Type", "text/event-stream");
@@ -72,6 +73,7 @@ app.post("/login", async (req, res) => {
   try {
     const { ph, pwd } = req.body;
     await appleLogin(ph, pwd);
+    currentPuppeterStatus = "OTP";
     res.status(200).json({ msg: "successfully verified, please enter otp" });
   } catch (error) {
     res.status(400).json({ msg: "enter correct otp", msg: error.message });
@@ -116,7 +118,7 @@ app.get("/download-zip", async (req, res) => {
 
 const appleLogin = async (ph, pwd) => {
   browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
     ignoreHTTPSErrors: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-sync", "--ignore-certificate-errors"],
   });
@@ -157,6 +159,9 @@ const appleLogin = async (ph, pwd) => {
     await frame.waitForSelector("input#password_text_field", { timeout: 60000 });
     await frame.type("input#password_text_field", pwd, { delay: 50 });
     await frame.click("button#sign-in");
+
+    // await frame.waitForSelector("input[aria-label*='Digit 1']", { timeout: 60000 });
+    // await frame.type("input[aria-label*='Digit 1']", inputs[0], { delay: 50 });
 
     // zipping images
   } catch (error) {
