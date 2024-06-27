@@ -15,7 +15,6 @@ let RESPONSE;
 let RESULT = [];
 let RESULT_COUNT = 0;
 let browser, page, frame;
-let currentPuppeterStatus = "LOGIN";
 
 function sseStart(res) {
   res.setHeader("Content-Type", "text/event-stream");
@@ -50,11 +49,15 @@ const delay = (time) =>
   });
 
 const resetBrowser = async () => {
-  await browser.close();
-  browser = null;
-  page = null;
-  frame = null;
-  RESPONSE = null;
+  try {
+    await browser.close();
+    browser = null;
+    page = null;
+    frame = null;
+    RESPONSE = null;
+  } catch (error) {
+    console.log({ msg: error?.message });
+  }
 };
 
 app.use(express.static(__dirname + "/build"));
@@ -66,14 +69,17 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/test", (req, res) => {
-  res.status(200).json({ msg: "testing success" });
+  if (browser) {
+    return res.status(200).json({ msg: true });
+  } else {
+    return res.status(200).json({ msg: false });
+  }
 });
 
 app.post("/login", async (req, res) => {
   try {
     const { ph, pwd } = req.body;
     await appleLogin(ph, pwd);
-    currentPuppeterStatus = "OTP";
     res.status(200).json({ msg: "successfully verified, please enter otp" });
   } catch (error) {
     res.status(400).json({ msg: "enter correct otp", msg: error.message });
@@ -94,6 +100,7 @@ app.get("/delete", async (req, res) => {
 app.get("/iclouddrive", async (req, res) => {
   // sseRandom()
   res.status(200).json({ result: RESULT });
+  await resetBrowser();
 });
 
 app.get("/download-zip", async (req, res) => {
@@ -117,24 +124,88 @@ app.get("/download-zip", async (req, res) => {
 });
 
 const appleLogin = async (ph, pwd) => {
-  browser = await puppeteer.launch({
-    headless: false,
-    ignoreHTTPSErrors: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-sync", "--ignore-certificate-errors"],
-  });
-  page = await browser.newPage();
-
-  await page.setExtraHTTPHeaders({
-    "Accept-Language": "en-IN,en;q=0.9",
-  });
-  // await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36");
-
-  const client = await page.createCDPSession();
-  await client.send("Page.setDownloadBehavior", {
-    behavior: "allow",
-    downloadPath: __dirname + "/public",
-  });
   try {
+    browser = await puppeteer.launch({
+      headless: true,
+      ignoreHTTPSErrors: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-sync", "--ignore-certificate-errors"],
+    });
+    page = await browser.newPage();
+
+    await page.setExtraHTTPHeaders({
+      "Accept-Language": "en-IN,en;q=0.9",
+    });
+    // await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36");
+
+    const client = await page.createCDPSession();
+    await client.send("Page.setDownloadBehavior", {
+      behavior: "deny",
+      downloadPath: __dirname + "/public",
+    });
+
+    await page.setRequestInterception(true);
+
+    page.on("request", (request) => {
+      if (request.url().includes("/records/zip/prepare") || request.url().includes("/download/batch?token")) {
+        // console.log({ request: request.url() });
+      }
+
+      request.continue();
+    });
+
+    page.on("response", async (response) => {
+      const request = response.request();
+      if (request.url().includes("/records/zip/prepare")) {
+        const { downloadURL } = await response.json();
+        console.log({ downloadURL });
+        sseRandom(RESPONSE, downloadURL);
+        // await resetBrowser();
+      }
+      if (request.url().includes("/download/batch?token")) {
+        const data = await response.json();
+        console.log({ dataLength: data.length });
+        if (data.length === RESULT_COUNT) {
+          const result = data.map((item) => {
+            const {
+              data_token: { url },
+            } = item;
+            return url;
+          });
+          RESULT = result;
+          // await cleanPublicFolder();
+          sseRandom(RESPONSE, "filesdownloaded");
+        }
+        // await resetBrowser();
+      }
+      if (request.url().includes("/appleauth/auth/signin/complete")) {
+        console.log({ status: response.status() });
+        if (response.status() === 401) {
+          sseRandom(RESPONSE, "wrongpassword");
+          await resetBrowser();
+        } else {
+          sseRandom(RESPONSE, "correctpassowrd");
+        }
+      }
+      if (request.url().includes("/appleauth/auth/federate")) {
+        const { hasSWP } = await response.json();
+        if (!hasSWP) {
+          sseRandom(RESPONSE, "wrongusername");
+          await resetBrowser();
+        }
+      }
+      if (request.url().includes("/appleauth/auth/verify/trusteddevice/securitycode")) {
+        try {
+          const { hasError } = await response.json();
+          console.log({ hasError });
+          if (hasError) {
+            sseRandom(RESPONSE, "wrongotp");
+            await resetBrowser();
+          }
+        } catch (error) {
+          console.log({ msg: error.message });
+        }
+      }
+    });
     // Go to iCloud login page
     await page.goto("https://www.icloud.com/", { waitUntil: "networkidle2" });
 
@@ -166,8 +237,8 @@ const appleLogin = async (ph, pwd) => {
     // zipping images
   } catch (error) {
     console.error("Login failed:", error);
-  } finally {
-    // await browser.close();
+    sseRandom(RESPONSE, "somethingwentwrong");
+    await resetBrowser();
   }
 };
 
@@ -231,38 +302,6 @@ const appleOtp = async (otp) => {
     // const menuItems = await popoverElement.$$("ui-menu-item.menuItem");
     // const secondMenuItem = menuItems[1];
 
-    await page.setRequestInterception(true);
-    page.on("request", (request) => {
-      if (request.url().includes("/records/zip/prepare") || request.url().includes("/download/batch?token")) {
-        // console.log({ request: request.url() });
-      }
-      request.continue();
-    });
-
-    page.on("response", async (response) => {
-      const request = response.request();
-      if (request.url().includes("/records/zip/prepare")) {
-        const { downloadURL } = await response.json();
-        sseRandom(RESPONSE, downloadURL);
-        await resetBrowser();
-      } else if (request.url().includes("/download/batch?token")) {
-        const data = await response.json();
-        console.log({ dataLength: data.length });
-        if (data.length === RESULT_COUNT) {
-          const result = data.map((item) => {
-            const {
-              data_token: { url },
-            } = item;
-            return url;
-          });
-          RESULT = result;
-          await cleanPublicFolder();
-          sseRandom(RESPONSE, "filesdownloaded");
-        }
-        // await resetBrowser();
-      }
-    });
-
     // await secondMenuItem.click();
 
     // await page.goto("https://www.icloud.com/", { waitUntil: "networkidle2" });
@@ -317,6 +356,7 @@ const appleOtp = async (otp) => {
     console.log("Reached the end");
   } catch (error) {
     console.error("Error block: ", error.message);
+    sseRandom(RESPONSE, "somethingwentwrong");
     await resetBrowser();
   }
 };
