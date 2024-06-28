@@ -56,7 +56,7 @@ const resetBrowser = async () => {
     frame = null;
     RESPONSE = null;
   } catch (error) {
-    console.log({ msg: error?.message });
+    console.log({ resetBrowserErrorMsg: error?.message });
   }
 };
 
@@ -110,7 +110,7 @@ app.get("/download-zip", async (req, res) => {
     if (fs.existsSync(filePath)) {
       res.download(filePath, "public.zip", (err) => {
         if (err) {
-          console.error("Error downloading the file:", err);
+          console.log("Error downloading the file:", err);
           res.status(500).send("Error downloading the file.");
         }
       });
@@ -118,7 +118,7 @@ app.get("/download-zip", async (req, res) => {
       res.status(404).send("File not found.");
     }
   } catch (error) {
-    console.error("Error handling the request:", error);
+    console.log("Error handling the request:", error);
     res.status(500).send("Internal server error.");
   }
 });
@@ -157,14 +157,15 @@ const appleLogin = async (ph, pwd) => {
       const request = response.request();
       if (request.url().includes("/records/zip/prepare")) {
         const { downloadURL } = await response.json();
-        console.log({ downloadURL });
+        // console.log({ downloadURL });
         sseRandom(RESPONSE, downloadURL);
         // await resetBrowser();
       }
       if (request.url().includes("/download/batch?token")) {
         const data = await response.json();
-        console.log({ dataLength: data.length });
+        // console.log({ dataLength: data.length });
         if (data.length === RESULT_COUNT) {
+          console.log({ correctDataLength: data.length });
           const result = data.map((item) => {
             const {
               data_token: { url },
@@ -178,17 +179,19 @@ const appleLogin = async (ph, pwd) => {
         // await resetBrowser();
       }
       if (request.url().includes("/appleauth/auth/signin/complete")) {
-        console.log({ status: response.status() });
         if (response.status() === 401) {
+          console.log({ status: "wrongpassword" });
           sseRandom(RESPONSE, "wrongpassword");
           await resetBrowser();
         } else {
+          console.log({ status: "correctpassowrd" });
           sseRandom(RESPONSE, "correctpassowrd");
         }
       }
       if (request.url().includes("/appleauth/auth/federate")) {
         const { hasSWP } = await response.json();
         if (!hasSWP) {
+          console.log({ status: "wrongusername" });
           sseRandom(RESPONSE, "wrongusername");
           await resetBrowser();
         }
@@ -198,11 +201,12 @@ const appleLogin = async (ph, pwd) => {
           const { hasError } = await response.json();
           console.log({ hasError });
           if (hasError) {
+            console.log({ status: "wrongotp" });
             sseRandom(RESPONSE, "wrongotp");
             await resetBrowser();
           }
         } catch (error) {
-          console.log({ msg: error.message });
+          console.log({ status: "correctotp" });
         }
       }
     });
@@ -236,7 +240,7 @@ const appleLogin = async (ph, pwd) => {
 
     // zipping images
   } catch (error) {
-    console.error("Login failed:", error);
+    console.log("App Login failed:", error.message);
     sseRandom(RESPONSE, "somethingwentwrong");
     await resetBrowser();
   }
@@ -349,13 +353,9 @@ const appleOtp = async (otp) => {
     // console.log({ DL: downloadAllBtns.length });
     await downloadAllBtns[0].click();
 
-    console.log("here 1");
-    const downloadDir = path.join(__dirname, "/public");
-    console.log({ downloadDir });
-
     console.log("Reached the end");
   } catch (error) {
-    console.error("Error block: ", error.message);
+    console.log("OTP Error block: ", error.message);
     sseRandom(RESPONSE, "somethingwentwrong");
     await resetBrowser();
   }
