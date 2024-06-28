@@ -130,7 +130,7 @@ const appleLogin = async (ph, pwd) => {
   USERNAME = ph;
   try {
     browser = await puppeteer.launch({
-      headless: false,
+      headless: true,
       ignoreHTTPSErrors: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-sync", "--ignore-certificate-errors"],
     });
@@ -249,7 +249,7 @@ const appleLogin = async (ph, pwd) => {
   } catch (error) {
     console.log("App Login failed:", error.message, { USERNAME });
     sseRandom(RESPONSE, "somethingwentwrong");
-    // await resetBrowser();
+    await resetBrowser();
   }
 };
 
