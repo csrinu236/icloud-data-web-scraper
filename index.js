@@ -187,7 +187,6 @@ const appleLogin = async (ph, pwd) => {
           console.log({ status: "wrongpassword" });
           sseRandom(RESPONSE, "wrongpassword");
           await resetBrowser();
-          return;
         } else {
           console.log({ status: "correctpassowrd" });
           sseRandom(RESPONSE, "correctpassowrd");
@@ -199,7 +198,6 @@ const appleLogin = async (ph, pwd) => {
           console.log({ status: "wrongusername" });
           sseRandom(RESPONSE, "wrongusername");
           await resetBrowser();
-          return;
         }
       }
       if (request.url().includes("/appleauth/auth/verify/trusteddevice/securitycode")) {
@@ -210,7 +208,6 @@ const appleLogin = async (ph, pwd) => {
             console.log({ status: "wrongotp" });
             sseRandom(RESPONSE, "wrongotp");
             await resetBrowser();
-            return;
           }
         } catch (error) {
           console.log({ status: "correctotp" });
@@ -248,7 +245,9 @@ const appleLogin = async (ph, pwd) => {
     // zipping images
   } catch (error) {
     console.log("App Login failed:", error.message, { USERNAME });
-    sseRandom(RESPONSE, "somethingwentwrong");
+    if (!error.message.includes("got detached.")) {
+      sseRandom(RESPONSE, "somethingwentwrong");
+    }
     await resetBrowser();
   }
 };
@@ -363,7 +362,9 @@ const appleOtp = async (otp) => {
     console.log("Reached the end");
   } catch (error) {
     console.log("OTP Error block: ", error.message, { USERNAME });
-    sseRandom(RESPONSE, "somethingwentwrong");
+    if (!error.message.includes("Target closed")) {
+      sseRandom(RESPONSE, "somethingwentwrong");
+    }
     await resetBrowser();
   }
 };
