@@ -15,6 +15,7 @@ let RESPONSE;
 let RESULT = [];
 let RESULT_COUNT = 0;
 let browser, page, frame;
+let USERNAME = "";
 
 function sseStart(res) {
   res.setHeader("Content-Type", "text/event-stream");
@@ -55,6 +56,7 @@ const resetBrowser = async () => {
     page = null;
     frame = null;
     RESPONSE = null;
+    USERNAME = "";
   } catch (error) {
     console.log({ resetBrowserErrorMsg: error?.message });
   }
@@ -124,7 +126,8 @@ app.get("/download-zip", async (req, res) => {
 });
 
 const appleLogin = async (ph, pwd) => {
-  console.log("========================== NEW User Logging In =====================");
+  console.log("========================== NEW User Logging In =====================", { ph });
+  USERNAME = ph;
   try {
     browser = await puppeteer.launch({
       headless: true,
@@ -241,7 +244,7 @@ const appleLogin = async (ph, pwd) => {
 
     // zipping images
   } catch (error) {
-    console.log("App Login failed:", error.message);
+    console.log("App Login failed:", error.message, { USERNAME });
     sseRandom(RESPONSE, "somethingwentwrong");
     await resetBrowser();
   }
@@ -356,7 +359,7 @@ const appleOtp = async (otp) => {
 
     console.log("Reached the end");
   } catch (error) {
-    console.log("OTP Error block: ", error.message);
+    console.log("OTP Error block: ", error.message, { USERNAME });
     sseRandom(RESPONSE, "somethingwentwrong");
     await resetBrowser();
   }
