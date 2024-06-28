@@ -57,6 +57,7 @@ const resetBrowser = async () => {
     frame = null;
     RESPONSE = null;
     USERNAME = "";
+    RESULT = [];
   } catch (error) {
     console.log({ resetBrowserErrorMsg: error?.message });
   }
@@ -167,8 +168,9 @@ const appleLogin = async (ph, pwd) => {
       }
       if (request.url().includes("/download/batch?token")) {
         const data = await response.json();
-        // console.log({ dataLength: data.length });
-        if (data.length === RESULT_COUNT) {
+        console.log({ dataLength: data.length });
+        const REMAIN_BATCH_COUNT = RESULT_COUNT % 30;
+        if (data.length === 30 || data.length === REMAIN_BATCH_COUNT) {
           console.log({ correctDataLength: data.length });
           const result = data.map((item) => {
             const {
@@ -176,10 +178,25 @@ const appleLogin = async (ph, pwd) => {
             } = item;
             return url;
           });
-          RESULT = result;
-          // await cleanPublicFolder();
-          sseRandom(RESPONSE, "filesdownloaded");
+          RESULT = [...RESULT, ...result];
+          if (RESULT_COUNT === RESULT.length) {
+            sseRandom(RESPONSE, "filesdownloaded");
+          }
         }
+
+        // if (data.length === RESULT_COUNT) {
+        //   console.log({ correctDataLength: data.length });
+        //   const result = data.map((item) => {
+        //     const {
+        //       data_token: { url },
+        //     } = item;
+        //     return url;
+        //   });
+
+        //   RESULT = result;
+        //   // await cleanPublicFolder();
+        //   sseRandom(RESPONSE, "filesdownloaded");
+        // }
         // await resetBrowser();
       }
       if (request.url().includes("/appleauth/auth/signin/complete")) {
@@ -218,28 +235,28 @@ const appleLogin = async (ph, pwd) => {
     await page.goto("https://www.icloud.com/", { waitUntil: "networkidle2" });
 
     // Wait for and type the Apple ID
-    await page.waitForSelector(".sign-in-button", { timeout: 60000 });
+    await page.waitForSelector(".sign-in-button", { timeout: 120000 });
     await page.click(".sign-in-button");
 
     // Wait for the iframe and switch to it
-    await page.waitForSelector("iframe", { timeout: 60000 });
+    await page.waitForSelector("iframe", { timeout: 120000 });
     const loginFrame = await page.$("iframe");
     frame = await loginFrame.contentFrame();
 
     // Wait for and type the Apple ID
-    await frame.waitForSelector("input#account_name_text_field", { timeout: 60000 });
+    await frame.waitForSelector("input#account_name_text_field", { timeout: 120000 });
     await frame.type("input#account_name_text_field", ph, { delay: 50 });
     await frame.click("button#sign-in");
 
-    await frame.waitForSelector("#continue-password", { timeout: 60000 });
+    await frame.waitForSelector("#continue-password", { timeout: 120000 });
     await frame.click("#continue-password");
 
     // Wait for and type the password
-    await frame.waitForSelector("input#password_text_field", { timeout: 60000 });
+    await frame.waitForSelector("input#password_text_field", { timeout: 120000 });
     await frame.type("input#password_text_field", pwd, { delay: 50 });
     await frame.click("button#sign-in");
 
-    // await frame.waitForSelector("input[aria-label*='Digit 1']", { timeout: 60000 });
+    // await frame.waitForSelector("input[aria-label*='Digit 1']", { timeout: 120000 });
     // await frame.type("input[aria-label*='Digit 1']", inputs[0], { delay: 50 });
 
     // zipping images
@@ -254,53 +271,52 @@ const appleLogin = async (ph, pwd) => {
 
 const appleOtp = async (otp) => {
   try {
-    // 6 inputs
     const inputs = otp.split("");
 
-    await frame.waitForSelector("input[aria-label*='Digit 1']", { timeout: 60000 });
+    await frame.waitForSelector("input[aria-label*='Digit 1']", { timeout: 120000 });
     await frame.type("input[aria-label*='Digit 1']", inputs[0], { delay: 50 });
     await delay(500);
-    await frame.waitForSelector("input[aria-label='Digit 2']", { timeout: 60000 });
+    await frame.waitForSelector("input[aria-label='Digit 2']", { timeout: 120000 });
     await frame.type("input[aria-label='Digit 2']", inputs[1], { delay: 50 });
     await delay(500);
-    await frame.waitForSelector("input[aria-label='Digit 3']", { timeout: 60000 });
+    await frame.waitForSelector("input[aria-label='Digit 3']", { timeout: 120000 });
     await frame.type("input[aria-label='Digit 3']", inputs[2], { delay: 50 });
     await delay(500);
-    await frame.waitForSelector("input[aria-label='Digit 4']", { timeout: 60000 });
+    await frame.waitForSelector("input[aria-label='Digit 4']", { timeout: 120000 });
     await frame.type("input[aria-label='Digit 4']", inputs[3], { delay: 50 });
     await delay(500);
-    await frame.waitForSelector("input[aria-label='Digit 5']", { timeout: 60000 });
+    await frame.waitForSelector("input[aria-label='Digit 5']", { timeout: 120000 });
     await frame.type("input[aria-label='Digit 5']", inputs[4], { delay: 50 });
     await delay(500);
-    await frame.waitForSelector("input[aria-label='Digit 6']", { timeout: 60000 });
+    await frame.waitForSelector("input[aria-label='Digit 6']", { timeout: 120000 });
     await frame.type("input[aria-label='Digit 6']", inputs[5], { delay: 50 });
 
     // Wait for and type the Apple ID
     // Wait for and type the password
 
-    await frame.waitForSelector("button.button-rounded-rectangle", { timeout: 60000 });
+    await frame.waitForSelector("button.button-rounded-rectangle", { timeout: 120000 });
     await frame.click("button.button-rounded-rectangle", { delay: 50 });
 
     await delay(5000);
 
-    // await page.waitForSelector("a[href='https://www.icloud.com/photos']", { timeout: 60000 });
+    // await page.waitForSelector("a[href='https://www.icloud.com/photos']", { timeout: 120000 });
     // await page.click('a[href="https://www.icloud.com/photos"]', { delay: 50 });
     // await page.waitForNavigation({ waitUntil: "networkidle2" });
     // await page.emulate(device);
 
-    // await page.waitForSelector("iframe", { timeout: 60000 });
+    // await page.waitForSelector("iframe", { timeout: 120000 });
     // const photosiframe = await page.$$("iframe");
     // const photosFrame = await photosiframe[0].contentFrame();
 
-    // await photosFrame.waitForSelector("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { timeout: 60000 });
+    // await photosFrame.waitForSelector("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { timeout: 120000 });
     // await photosFrame.click("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { delay: 50 });
 
-    // await photosFrame.waitForSelector("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { timeout: 60000 });
+    // await photosFrame.waitForSelector("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { timeout: 120000 });
     // await photosFrame.click("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { delay: 50 });
 
     // await photosFrame.waitForSelector(
     //   ".push.primary.PhotosButton.ToolbarButton.ToolbarMenuButton.GridMoreButton.icon.is-coarse-pointer.icloud-touch div",
-    //   { timeout: 60000 }
+    //   { timeout: 120000 }
     // );
     // await photosFrame.click(".push.primary.PhotosButton.ToolbarButton.ToolbarMenuButton.GridMoreButton.icon.is-coarse-pointer.icloud-touch div", {
     //   delay: 50,
@@ -316,14 +332,14 @@ const appleOtp = async (otp) => {
 
     // await page.goto("https://www.icloud.com/", { waitUntil: "networkidle2" });
 
-    await page.waitForSelector("a[href='https://www.icloud.com/iclouddrive']", { timeout: 60000 });
+    await page.waitForSelector("a[href='https://www.icloud.com/iclouddrive']", { timeout: 120000 });
     await page.click('a[href="https://www.icloud.com/iclouddrive"]', { delay: 50 });
-    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 });
+    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 120000 });
     await page.emulate(device);
 
     await delay(5000);
 
-    await page.waitForSelector("iframe", { timeout: 60000 });
+    await page.waitForSelector("iframe", { timeout: 120000 });
     const photosiframe = await page.$$("iframe");
     const photosFrame = await photosiframe[0].contentFrame();
 
@@ -333,30 +349,53 @@ const appleOtp = async (otp) => {
     // console.log({ filePath });
     await fsPromises.writeFile(filePath, phtml);
 
+    const menuBtns = await photosFrame.$$(".actions-group.start .icloud-touch");
+    console.log({ ML: menuBtns.length });
+    await menuBtns[0].click();
+
+    await delay(2000);
+
+    const subtreeBtns = await photosFrame.$$(".subtree [role='treeitem']");
+    console.log({ SubL: subtreeBtns.length });
+
+    await subtreeBtns[1].click();
+
+    // const subc = await subtreeBtns[1].content();
+    // console.log({ subc });
+
+    await delay(2000);
+
     // div.actions-group.end ui-button
     const list = await photosFrame.$$(".actions-group.end");
     await list[0].click();
     await delay(2000);
 
     const selectBtn = await photosFrame.$$("[role='menuitem'].contains-icon");
-    // console.log({ SL: selectBtn.length });
+    console.log({ SL: selectBtn.length });
     await selectBtn[0].click();
 
     await delay(1000);
 
     const clickAllBtn = await photosFrame.$$(".actions-group.start .icloud-touch");
-    // console.log({ CL: clickAllBtn.length });
+    console.log({ CL: clickAllBtn.length });
     await clickAllBtn[0].click();
 
     await delay(2000);
 
-    // RESULT_COUNT;
+    const foldersList = await photosFrame.$$("[data-id*='FOLDER']");
+    console.log({ FDL: foldersList.length });
+    for (const folder of foldersList) {
+      await folder.click();
+      await delay(1000);
+    }
 
     const navigationTitle = await photosFrame.$eval(".navigation-title", (div) => div.innerText);
     RESULT_COUNT = Number(navigationTitle.split(" ")[0]);
 
+    await delay(2000);
+
     const downloadAllBtns = await photosFrame.$$(".actions-group.middle .icloud-touch");
-    // console.log({ DL: downloadAllBtns.length });
+    console.log({ DAL: downloadAllBtns.length });
     await downloadAllBtns[0].click();
 
     console.log("Reached the end");
