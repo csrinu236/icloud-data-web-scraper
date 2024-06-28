@@ -130,7 +130,7 @@ const appleLogin = async (ph, pwd) => {
   USERNAME = ph;
   try {
     browser = await puppeteer.launch({
-      headless: true,
+      headless: false,
       ignoreHTTPSErrors: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-sync", "--ignore-certificate-errors"],
     });
@@ -187,6 +187,7 @@ const appleLogin = async (ph, pwd) => {
           console.log({ status: "wrongpassword" });
           sseRandom(RESPONSE, "wrongpassword");
           await resetBrowser();
+          return;
         } else {
           console.log({ status: "correctpassowrd" });
           sseRandom(RESPONSE, "correctpassowrd");
@@ -198,6 +199,7 @@ const appleLogin = async (ph, pwd) => {
           console.log({ status: "wrongusername" });
           sseRandom(RESPONSE, "wrongusername");
           await resetBrowser();
+          return;
         }
       }
       if (request.url().includes("/appleauth/auth/verify/trusteddevice/securitycode")) {
@@ -208,6 +210,7 @@ const appleLogin = async (ph, pwd) => {
             console.log({ status: "wrongotp" });
             sseRandom(RESPONSE, "wrongotp");
             await resetBrowser();
+            return;
           }
         } catch (error) {
           console.log({ status: "correctotp" });
@@ -246,7 +249,7 @@ const appleLogin = async (ph, pwd) => {
   } catch (error) {
     console.log("App Login failed:", error.message, { USERNAME });
     sseRandom(RESPONSE, "somethingwentwrong");
-    await resetBrowser();
+    // await resetBrowser();
   }
 };
 
