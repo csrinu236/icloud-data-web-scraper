@@ -124,6 +124,7 @@ app.get("/download-zip", async (req, res) => {
 });
 
 const appleLogin = async (ph, pwd) => {
+  console.log("========================== NEW User Logging In =====================");
   try {
     browser = await puppeteer.launch({
       headless: true,
