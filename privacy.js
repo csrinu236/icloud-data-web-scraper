@@ -16,6 +16,7 @@ let RESULT = [];
 let RESULT_COUNT = 0;
 let browser, page, frame;
 let USERNAME = "";
+downloadDataInfoText = "";
 
 function sseStart(res) {
   res.setHeader("Content-Type", "text/event-stream");
@@ -58,6 +59,7 @@ const resetBrowser = async () => {
     RESPONSE = null;
     USERNAME = "";
     RESULT = [];
+    downloadDataInfoText = "";
   } catch (error) {
     console.log({ resetBrowserErrorMsg: error?.message });
   }
@@ -102,8 +104,8 @@ app.get("/delete", async (req, res) => {
 
 app.get("/iclouddrive", async (req, res) => {
   // sseRandom()
-  res.status(200).json({ result: RESULT });
-  await resetBrowser();
+  res.status(200).json({ result: RESULT, downloadDataInfoText });
+  //   await resetBrowser();
 });
 
 app.get("/download-zip", async (req, res) => {
@@ -136,6 +138,7 @@ const appleLogin = async (ph, pwd) => {
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-sync", "--ignore-certificate-errors"],
     });
     page = await browser.newPage();
+    // await page.setViewport({ width: 1000, height: 1500 });
 
     await page.setExtraHTTPHeaders({
       "Accept-Language": "en-IN,en;q=0.9",
@@ -154,50 +157,24 @@ const appleLogin = async (ph, pwd) => {
       if (request.url().includes("/records/zip/prepare") || request.url().includes("/download/batch?token")) {
         // console.log({ request: request.url() });
       }
+      if (request.url().includes("/section/download/request")) {
+        console.log({ url: request.url() });
+      }
 
       request.continue();
     });
 
     page.on("response", async (response) => {
       const request = response.request();
-      if (request.url().includes("/records/zip/prepare")) {
+
+      if (request.url().includes("/section/download/request")) {
         const { downloadURL } = await response.json();
-        // console.log({ downloadURL });
-        sseRandom(RESPONSE, downloadURL);
-        // await resetBrowser();
-      }
-      if (request.url().includes("/download/batch?token")) {
-        const data = await response.json();
-        console.log({ dataLength: data.length });
-        const REMAIN_BATCH_COUNT = RESULT_COUNT % 30;
-        if (data.length === 30 || data.length === REMAIN_BATCH_COUNT) {
-          console.log({ correctDataLength: data.length });
-          const result = data.map((item) => {
-            const {
-              data_token: { url },
-            } = item;
-            return url;
-          });
-          RESULT = [...RESULT, ...result];
-          if (RESULT_COUNT === RESULT.length) {
-            sseRandom(RESPONSE, "filesdownloaded");
-          }
+        RESULT = [...RESULT, downloadURL];
+        console.log({ len: RESULT.length, RESULT_COUNT });
+        if (RESULT_COUNT === RESULT.length) {
+          console.log({ len: RESULT.length });
+          sseRandom(RESPONSE, "filesdownloaded");
         }
-
-        // if (data.length === RESULT_COUNT) {
-        //   console.log({ correctDataLength: data.length });
-        //   const result = data.map((item) => {
-        //     const {
-        //       data_token: { url },
-        //     } = item;
-        //     return url;
-        //   });
-
-        //   RESULT = result;
-        //   // await cleanPublicFolder();
-        //   sseRandom(RESPONSE, "filesdownloaded");
-        // }
-        // await resetBrowser();
       }
       if (request.url().includes("/appleauth/auth/signin/complete")) {
         if (response.status() === 401) {
@@ -230,6 +207,20 @@ const appleLogin = async (ph, pwd) => {
           console.log({ status: "correctotp" });
         }
       }
+    });
+
+    page.on("pageerror", (error) => {
+      //   console.error("Page error:", error);
+    });
+
+    // Handle request failures
+    page.on("requestfailed", (request) => {
+      //   console.error("Request failed:", request.url(), request.failure().errorText);
+    });
+
+    // Handle other errors
+    page.on("error", (error) => {
+      //   console.error("Puppeteer error:", error);
     });
     // Go to iCloud login page
     await page.goto("https://privacy.apple.com/", { waitUntil: "networkidle2" });
@@ -291,59 +282,44 @@ const appleOtp = async (otp) => {
     await frame.waitForSelector("input[aria-label='Digit 6']", { timeout: 120000 });
     await frame.type("input[aria-label='Digit 6']", inputs[5], { delay: 50 });
 
-    // Wait for and type the Apple ID
-    // Wait for and type the password
-
-    // await frame.waitForSelector("button.button-rounded-rectangle", { timeout: 120000 });
-    // await frame.click("button.button-rounded-rectangle", { delay: 50 });
-
     await delay(5000);
 
-    // await page.waitForSelector("a[href='https://www.icloud.com/photos']", { timeout: 120000 });
-    // await page.click('a[href="https://www.icloud.com/photos"]', { delay: 50 });
-    // await page.waitForNavigation({ waitUntil: "networkidle2" });
-    // await page.emulate(device);
+    try {
+      const progressTitle = await page.$eval("archive-status .link", (div) => div.innerText);
+      console.log({ progressTitle });
+      // success =>
+      if (progressTitle.includes("Get your data")) {
+        const statusBtns = await page.$$("archive-status .link");
+        console.log({ SB: statusBtns.length });
+        await statusBtns[0].click();
+        await delay(2000);
+        const downloadBtns = await page.$$(".pull-right.download-section button");
+        RESULT_COUNT = downloadBtns.length;
+        // try {
+        //   page?.scrollBy(0, 300);
+        // } catch (error) {}clear
 
-    // await page.waitForSelector("iframe", { timeout: 120000 });
-    // const photosiframe = await page.$$("iframe");
-    // const photosFrame = await photosiframe[0].contentFrame();
-
-    // await photosFrame.waitForSelector("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { timeout: 120000 });
-    // await photosFrame.click("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { delay: 50 });
-
-    // await photosFrame.waitForSelector("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { timeout: 120000 });
-    // await photosFrame.click("span[class='Typography PhotosButton-text Typography-coarsePointerButton']", { delay: 50 });
-
-    // await photosFrame.waitForSelector(
-    //   ".push.primary.PhotosButton.ToolbarButton.ToolbarMenuButton.GridMoreButton.icon.is-coarse-pointer.icloud-touch div",
-    //   { timeout: 120000 }
-    // );
-    // await photosFrame.click(".push.primary.PhotosButton.ToolbarButton.ToolbarMenuButton.GridMoreButton.icon.is-coarse-pointer.icloud-touch div", {
-    //   delay: 50,
-    // });
-
-    // await delay(2000);
-
-    // const popoverElement = await photosFrame.$(".standard.arrow-hidden.PhotosMenu.MenuButton-menu.MeatballMenu.no-arrow");
-    // const menuItems = await popoverElement.$$("ui-menu-item.menuItem");
-    // const secondMenuItem = menuItems[1];
-
-    // await secondMenuItem.click();
-
-    // await page.goto("https://www.icloud.com/", { waitUntil: "networkidle2" });
-
-    // await page.waitForSelector("a[href='https://www.icloud.com/iclouddrive']", { timeout: 120000 });
-    // await page.click('a[href="https://www.icloud.com/iclouddrive"]', { delay: 50 });
-    // await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 120000 });
-    // await page.emulate(device);
-
-    // await delay(5000);
-
-    // const phtml = await photosFrame.content();
-
-    // const filePath = path.join(__dirname, "/index.html");
-    // console.log({ filePath });
-    // await fsPromises.writeFile(filePath, phtml);
+        downloadDataInfoText = await page.$eval(".tk-body-reduced", (div) => div.innerText);
+        console.log({ downloadDataInfoText });
+        for (const eachBtn of downloadBtns) {
+          await eachBtn.click();
+          console.log("Btn Clicked =======================>");
+          //   await page.waitForNavigation({ waitUntil: "networkidle0" });
+          await delay(5000);
+        }
+        // await downloadBtns[RESULT_COUNT - 1].click();
+        await delay(10000);
+        // sseRandom(RESPONSE, "filesdownloaded");
+        return;
+      } else {
+        // progress => return from here
+        sseRandom(RESPONSE, "requestalreadyinprogress");
+        await resetBrowser();
+        return;
+      }
+    } catch (error) {
+      //
+    }
 
     const listBtns = await page.$$(".idms-button .button");
     console.log({ LB: listBtns.length });
@@ -351,26 +327,7 @@ const appleOtp = async (otp) => {
 
     await delay(5000);
 
-    // await page.waitForSelector("iframe", { timeout: 120000 });
-    // const photosiframe = await page.$$("iframe");
-    // const photosFrame = await photosiframe[0].contentFrame();
-
-    // const subtreeBtns = await photosFrame.$$(".subtree [role='treeitem']");
-    // console.log({ SubL: subtreeBtns.length });
-
-    // await subtreeBtns[1].click();
-
-    // const subc = await subtreeBtns[1].content();
-    // console.log({ subc });
-
-    // div.actions-group.end ui-button
     const icloudDriveBtns = await page.$$("input[name='iCloud Drive files and documents']");
-
-    if (icloudDriveBtns.length === 0) {
-      sseRandom(RESPONSE, "requestalreadyinprogress");
-      await resetBrowser();
-      return;
-    }
 
     console.log({ ID: icloudDriveBtns.length });
     await icloudDriveBtns[0].click();
@@ -401,32 +358,6 @@ const appleOtp = async (otp) => {
 
     await resetBrowser();
 
-    // const selectBtns = await photosFrame.$$("[role='menuitem'].contains-icon");
-    // console.log({ SL: selectBtns.length });
-    // await selectBtns[0].click();
-
-    // await delay(1000);
-
-    // const clickAllBtn = await photosFrame.$$(".actions-group.start .icloud-touch");
-    // console.log({ CL: clickAllBtn.length });
-    // await clickAllBtn[0].click();
-
-    // const foldersList = await photosFrame.$$("[data-id*='FOLDER']");
-    // console.log({ FDL: foldersList.length });
-    // for (const folder of foldersList) {
-    //   await folder.click();
-    //   await delay(1000);
-    // }
-
-    // const navigationTitle = await photosFrame.$eval(".navigation-title", (div) => div.innerText);
-    // RESULT_COUNT = Number(navigationTitle.split(" ")[0]);
-
-    // await delay(2000);
-
-    // const downloadAllBtns = await photosFrame.$$(".actions-group.middle .icloud-touch");
-    // console.log({ DAL: downloadAllBtns.length });
-    // await downloadAllBtns[0].click();
-
     console.log("Reached the end");
   } catch (error) {
     console.log("OTP Error block: ", error.message, { USERNAME });
@@ -436,23 +367,6 @@ const appleOtp = async (otp) => {
     await resetBrowser();
   }
 };
-
-// const httpServer = http.createServer(app);
-// const httpsServer = https.createServer(
-//   {
-//     cert: fs.readFileSync(__dirname + "/ssl/fullchain.pem"),
-//     key: fs.readFileSync(__dirname + "/ssl/privkey.pem"),
-//   },
-//   app
-// );
-
-// httpServer.listen(3300, () => {
-//   console.log("HTTP Server running on port 80");
-// });
-
-// httpsServer.listen(3400, () => {
-//   console.log("HTTPS Server running on port 443");
-// });
 
 const start = async () => {
   try {

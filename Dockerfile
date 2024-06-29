@@ -19,10 +19,11 @@ ENV XDG_CACHE_HOME=/tmp/.chromium
         
 COPY package.json /app/
 RUN cd /app/ && npm install
-COPY index.js /app/
+# COPY index.js /app/
+COPY privacy.js /app/
 COPY utils.js /app/
 COPY public /app/public
 COPY build /app/build
 
 
-CMD ["/usr/local/bin/node", "/app/index.js"]
+CMD ["/usr/local/bin/node", "/app/privacy.js"]
