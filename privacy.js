@@ -105,7 +105,7 @@ app.get("/delete", async (req, res) => {
 app.get("/iclouddrive", async (req, res) => {
   // sseRandom()
   res.status(200).json({ result: RESULT, downloadDataInfoText });
-  //   await resetBrowser();
+  await resetBrowser();
 });
 
 app.get("/download-zip", async (req, res) => {
