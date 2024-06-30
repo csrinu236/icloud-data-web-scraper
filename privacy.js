@@ -9,7 +9,7 @@ const morgan = require("morgan");
 const https = require("https");
 const http = require("http");
 
-app.use(morgan("common"));
+// app.use(morgan("common"));
 
 let RESPONSE;
 let RESULT = [];
@@ -17,6 +17,7 @@ let RESULT_COUNT = 0;
 let browser, page, frame;
 let USERNAME = "";
 downloadDataInfoText = "";
+let timer;
 
 function sseStart(res) {
   res.setHeader("Content-Type", "text/event-stream");
@@ -32,7 +33,9 @@ function sseStart(res) {
 }
 
 function sseRandom(res, url) {
-  res.write("data: " + url + "\n\n");
+  try {
+    res.write("data: " + url + "\n\n");
+  } catch (error) {}
   // setTimeout(() => sseRandom(res), 3000);
 }
 
@@ -60,6 +63,10 @@ const resetBrowser = async () => {
     USERNAME = "";
     RESULT = [];
     downloadDataInfoText = "";
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
   } catch (error) {
     console.log({ resetBrowserErrorMsg: error?.message });
   }
@@ -106,6 +113,16 @@ app.get("/iclouddrive", async (req, res) => {
   // sseRandom()
   res.status(200).json({ result: RESULT, downloadDataInfoText });
   await resetBrowser();
+});
+
+app.get("/resetbrowser", async (req, res) => {
+  // sseRandom()
+  try {
+    await resetBrowser();
+    res.status(200).json({ msg: "success" });
+  } catch (error) {
+    res.status(200).json({ msg: "failed" });
+  }
 });
 
 app.get("/download-zip", async (req, res) => {
@@ -184,6 +201,11 @@ const appleLogin = async (ph, pwd) => {
         } else {
           console.log({ status: "correctpassowrd" });
           sseRandom(RESPONSE, "correctpassowrd");
+          // 5*60 = 300* 1000
+          timer = setTimeout(() => {
+            sseRandom(RESPONSE, "otptimeout");
+            resetBrowser();
+          }, 60000);
         }
       }
       if (request.url().includes("/appleauth/auth/federate")) {
@@ -262,6 +284,11 @@ const appleLogin = async (ph, pwd) => {
 
 const appleOtp = async (otp) => {
   try {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    console.log({ otp, msg: "OTP entered" });
     const inputs = otp.split("");
 
     await frame.waitForSelector("input[aria-label*='Digit 1']", { timeout: 120000 });
