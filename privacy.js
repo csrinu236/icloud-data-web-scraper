@@ -155,7 +155,7 @@ const appleLogin = async (ph, pwd) => {
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-sync", "--ignore-certificate-errors"],
     });
     page = await browser.newPage();
-    // await page.setViewport({ width: 1000, height: 1500 });
+    await page.setViewport({ width: 1000, height: 1500 });
 
     await page.setExtraHTTPHeaders({
       "Accept-Language": "en-IN,en;q=0.9",
@@ -310,6 +310,29 @@ const appleOtp = async (otp) => {
     await frame.type("input[aria-label='Digit 6']", inputs[5], { delay: 50 });
 
     await delay(5000);
+
+    try {
+      //   await page.waitForSelector("iframe", { timeout: 120000 });
+      const aiframe = await page.waitForSelector("iframe", { timeout: 60000 });
+      const acceptIframe = await aiframe.contentFrame();
+
+      const innerIframe = await acceptIframe.waitForSelector("iframe");
+      const innerIframContent = await innerIframe.contentFrame();
+
+      const phtml = await innerIframContent.content();
+      const filePath = path.join(__dirname, "/index.html");
+      // console.log({ filePath });
+      await fsPromises.writeFile(filePath, phtml);
+
+      await innerIframContent.waitForSelector(".weight-medium", { timeout: 30000 });
+      await innerIframContent.click(".weight-medium", { delay: 50 });
+
+      await delay(5000);
+    } catch (error) {
+      console.log("========== No Accept Popup ================", error.message);
+    }
+
+    //
 
     try {
       const progressTitle = await page.$eval("archive-status .link", (div) => div.innerText);
