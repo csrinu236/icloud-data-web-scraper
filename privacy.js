@@ -88,6 +88,10 @@ app.get("/test", (req, res) => {
   }
 });
 
+app.get("/healthcheck", (req, res) => {
+  return res.status(200).json({ healthcheck: true });
+});
+
 app.post("/login", async (req, res) => {
   try {
     const { ph, pwd } = req.body;
